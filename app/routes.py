@@ -8,7 +8,6 @@ from app.encryption import HomomorphicEncryption
 
 router = APIRouter()
 
-# Store keypair temporarily (in production, use secure key management)
 temp_keypair_storage = {}
 
 @router.post("/encrypt", response_model=EncryptResponse, tags=["Encryption"])
@@ -31,13 +30,12 @@ async def encrypt_numbers(request: EncryptRequest):
         public_key_str = HomomorphicEncryption.serialize_public_key(public_key)
         private_key_str = HomomorphicEncryption.serialize_private_key(private_key)
         
-        # Store private key temporarily (for demo purposes only!)
         temp_keypair_storage[public_key_str] = private_key_str
         
         return EncryptResponse(
             encrypted_numbers=encrypted_numbers,
             public_key=public_key_str,
-            private_key=private_key_str  # Added for testing
+            private_key=private_key_str 
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Encryption failed: {str(e)}")
@@ -51,7 +49,6 @@ async def compute_on_encrypted(request: ComputeRequest):
         # Deserialize public key
         public_key = HomomorphicEncryption.deserialize_public_key(request.public_key)
         
-        # Normalize operation name (accept both 'add'/'sum')
         operation = request.operation.lower()
         
         if operation in ["add", "sum"]:
@@ -66,7 +63,6 @@ async def compute_on_encrypted(request: ComputeRequest):
                     status_code=400, 
                     detail="Multiplier required for multiply operation"
                 )
-            # Multiply first encrypted number by scalar
             result = HomomorphicEncryption.multiply_encrypted_by_scalar(
                 public_key,
                 request.encrypted_numbers[0],
@@ -90,10 +86,8 @@ async def decrypt_value(request: DecryptRequest):
     Decrypt an encrypted value using the private key.
     """
     try:
-        # First, try to get the stored private key using public key lookup
         private_key_str = request.private_key
         
-        # Deserialize public key from private key structure
         import json
         priv_data = json.loads(private_key_str)
         
@@ -126,7 +120,6 @@ async def demo_full_workflow():
     3. Decrypt the result (should be 60)
     """
     try:
-        # Step 1: Generate keys and encrypt
         public_key, private_key = HomomorphicEncryption.generate_keypair()
         numbers = [10, 20, 30]
         
@@ -135,13 +128,11 @@ async def demo_full_workflow():
             for num in numbers
         ]
         
-        # Step 2: Add encrypted numbers (homomorphic operation)
         encrypted_sum = HomomorphicEncryption.add_encrypted_numbers(
             public_key, 
             encrypted
         )
         
-        # Step 3: Decrypt result
         decrypted_sum = HomomorphicEncryption.decrypt_number(
             private_key, 
             encrypted_sum
